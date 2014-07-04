@@ -57,10 +57,10 @@ wp-membership-bitpay-gateway is free and unencumbered public domain software.
 For more information, see [http://unlicense.org/] or the accompanying
 UNLICENSE file.
 
-[bitpay]:		https://bitpay.com/
-[wpwmumembership]:	
-[wordpress]:		https://wordpress.org/
-[bwb]:			http://bwb.is/
-[bitcoinfoundation]:	https://bitcoinfoundation.org/
-[bitpayphplib]:		https://github.com/bitpay/php-client
-[ionux]:		https://github.com/ionux
+[bitpay]: https://bitpay.com/
+[wpwmumembership]: https://premium.wpmudev.org/project/membership/
+[wordpress]: https://wordpress.org/
+[bwb]: http://bwb.is/
+[bitcoinfoundation]: https://bitcoinfoundation.org/
+[bitpayphplib]: https://github.com/bitpay/php-client
+[ionux]: https://github.com/ionux
