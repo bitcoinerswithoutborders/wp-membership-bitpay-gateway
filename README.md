@@ -21,10 +21,14 @@ $ sudo cp -R membership ($WP_HOME)/wp-content/plugins/membership
 Now, activate the gateway in WordPress:
 Membership->Payment Gateways->BitPay->Activate
 
-Documentation
+Configuration
 -------------
 
-Documentation can be found at [code.gogulski.com](http://code.gogulski.com/).
+All configuration options are presented in the settings menu:
+Membership->Payment Gateways->BitPay->Settings. The settings here
+are the same ones documented in BitPay's PHP client API implementation,
+documented in their source code at
+https://github.com/bitpay/php-client/blob/master/bp_options.php
 
 Requirements
 ------------
@@ -56,8 +60,8 @@ License
 -------
 
 wp-membership-bitpay-gateway is free and unencumbered public domain software.
-For more information, see [http://unlicense.org/] or the accompanying
-UNLICENSE file.
+For more information, see http://unlicense.org/ or the accompanying UNLICENSE
+file.
 
 [bitpay]: https://bitpay.com/
 [wpmumembership]: https://premium.wpmudev.org/project/membership/
@@ -66,3 +70,5 @@ UNLICENSE file.
 [bitcoinfoundation]: https://bitcoinfoundation.org/
 [bitpayphpclient]: https://github.com/bitpay/php-client
 [ionux]: https://github.com/ionux
+[unlicense]: http://unlicense.org/
+
