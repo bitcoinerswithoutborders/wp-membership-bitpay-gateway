@@ -11,10 +11,12 @@ The contents of the membership/ tree of this respository needs to be overlaid
 into the membership plugin's directory in your WordPress installation. If
 standard path names are in use, this might be done like this:
 
+```
 $ git clone https://github.com/bitcoinerswithoutborders/wp-membership-bitpay-gateway.git
 $ cd wp-membership-bitpay-gateway
 # $WP_HOME is the base directory of your WordPress installation.
 $ sudo cp -R membership ($WP_HOME)/wp-content/plugins/membership
+```
 
 Now, activate the gateway in WordPress:
 Membership->Payment Gateways->BitPay->Activate
@@ -58,9 +60,9 @@ For more information, see [http://unlicense.org/] or the accompanying
 UNLICENSE file.
 
 [bitpay]: https://bitpay.com/
-[wpwmumembership]: https://premium.wpmudev.org/project/membership/
+[wpmumembership]: https://premium.wpmudev.org/project/membership/
 [wordpress]: https://wordpress.org/
 [bwb]: http://bwb.is/
 [bitcoinfoundation]: https://bitcoinfoundation.org/
-[bitpayphplib]: https://github.com/bitpay/php-client
+[bitpayphpclient]: https://github.com/bitpay/php-client
 [ionux]: https://github.com/ionux
