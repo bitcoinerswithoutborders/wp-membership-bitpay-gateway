@@ -115,7 +115,7 @@ class bitpay extends Membership_Gateway {
 		global $M_options;
 
 		?>
-		<div class="metabox-holder has-right-sidebar">
+		<div style="display: inline-block; width: 100%;" class="metabox-holder has-right-sidebar">
 			<div class="inner-sidebar">
 				<div class="postbox">
 					<h3><span>Brought to you by<br/><a href="http://bwb.is/">Bitcoiners without Borders</a><span></h3>
