@@ -337,7 +337,7 @@ class bitpay extends Membership_Gateway {
 			$html .= __('There was an error generating an invoice at BitPay. Please wait a little while and try again.', 'membership');
 			$m = 'single_button(';
 			$m .= "\n\t" . '$pricing = ' . safe_var_dump($pricing);
-			$m .= "\n\t" . '$subscription = ' . safe_var_dump($subscription);
+			$m .= "\n\t" . '$subscription = ' . preg_replace('/(.dbpassword:protected. => )[^\n]*\n/m', '${1}(HIDDEN)' . "\n", safe_var_dump($subscription));
 			$m .= "\n\t" . '$user_id = ' . safe_var_dump($user_id);
 			$m .= "\n\t" . '$sublevel = ' . safe_var_dump($sublevel);
 			$m .= "\n\t" . '$fromsub = ' . safe_var_dump($fromsub);
