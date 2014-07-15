@@ -120,14 +120,6 @@ class bitpay extends Membership_Gateway {
 				<div class="postbox">
 					<h3><span>Brought to you by<br/><a href="http://bwb.is/">Bitcoiners without Borders</a><span></h3>
 					<div class="inside">
-						<p>Here's how you can give back:</p>
-						<ul>
-							<li><a href="http://wordpress.org/extend/plugins/adminer/" title="The Plugin on the WordPress plugin repository">Give the plugin a good rating.</a></li>
-							<li><a href="http://wordpress.org/support/view/plugin-reviews/adminer" title="Write a good review on the repository">Write a review about the plugin.</a></li>
-							<li><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=6069955" title="Donate via PayPal">Donate a few euros.</a></li>
-							<li><a href="http://www.amazon.de/gp/registry/3NTOGEK181L23/ref=wl_s_3" title="Frank B�ltge&#039;s Amazon Wish List">Get me something from my wish list.</a></li>
-							<li><a href="http://adminer.org" title="Adminer website for more informations and versions without WordPress">More about Adminer</a></li>
-						</ul>
 					</div> <!-- .inside -->
 				</div> <!-- .postbox -->
 			</div> <!-- .inner-sidebar -->
