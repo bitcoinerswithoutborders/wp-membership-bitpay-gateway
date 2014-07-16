@@ -478,7 +478,7 @@ class bitpay extends Membership_Gateway {
 					if ($member) {
 						if ($sublevel == '1') {
 							// This is the first level of a subscription so we need to create one if it doesn't already exist
-							membership_debug_log('Creating subscription for user ID ' . $id);
+							membership_debug_log('Creating subscription for user ID ' . $user_id);
 							$member->create_subscription($sub_id, $this->gateway);
 							do_action('membership_payment_subscr_signup', $user_id, $sub_id);
 						} else {
