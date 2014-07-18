@@ -320,6 +320,7 @@ class bitpay extends Membership_Gateway {
 
 	function single_button($pricing, $subscription, $user_id, $sublevel = 0, $fromsub = 0) {
 		global $M_options;
+		$u = new WP_User($user_id);
 
 		$this->set_bpOptions();
 		if (empty($M_options['paymentcurrency']))
@@ -330,7 +331,7 @@ class bitpay extends Membership_Gateway {
 		$orderId = '';
 		$price = apply_filters('membership_amount_' . $M_options['paymentcurrency'], number_format($pricing[$sublevel - 1]['amount'], 2, '.' , ''));
 		$posData = $this->build_posData($user_id, $subscription->id, number_format($pricing[$sublevel - 1]['amount'], 2, '.' , ''), $sublevel, $fromsub);
-		$options = array('itemDesc' => $subscription->sub_name());
+		$options = array('itemDesc' => $u->user_email . ': ' . $subscription->sub_name());
 		$resp = bpCreateInvoice($orderId, $price, $posData, $options);
 				
 		if (!isset($resp) || empty($resp) || isset($resp['error']) || !isset($resp['exceptionStatus']) || $resp['exceptionStatus']) {
