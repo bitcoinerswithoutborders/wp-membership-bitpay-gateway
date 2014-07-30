@@ -34,10 +34,10 @@ class bitpay extends Membership_Gateway {
 		parent::__construct();
 
 		$this->bitpay_transaction_speeds = array(
-								'high'		=>	__('High (immediate, no blockchain confirmations)', 'membership'),
-								'medium'	=>	__('Medium (1 blockchain confirmation, ~10 minutes)', 'membership'),
-								'low'		=>	__('Low (6 blockchain confirmations, ~1 hour)', 'membership'),
-							);
+							'high'		=>	__('High (immediate, no blockchain confirmations)', 'membership'),
+							'medium'	=>	__('Medium (1 blockchain confirmation, ~10 minutes)', 'membership'),
+							'low'		=>	__('Low (6 blockchain confirmations, ~1 hour)', 'membership'),
+		);
 		$this->ip_whitelist_cache_expire_seconds = 60 * 60 * 6;	// 6 hours
 		add_action('M_gateways_settings_' . $this->gateway, array(&$this, 'mysettings'));
 
@@ -209,6 +209,31 @@ class bitpay extends Membership_Gateway {
 		<?php
 	}
 
+	function display_upgrade_from_free_button($subscription, $pricing, $user_id, $fromsub_id = false) {
+		if($pricing[0]['amount'] < 1) {
+			// a free first level
+			$this->display_upgrade_button($subscription, $pricing, $user_id, $fromsub_id);
+		} else {
+			echo $this->build_subscribe_button($subscription, $pricing, $user_id, $fromsub_id);
+		}
+
+	}
+
+	function display_upgrade_button($subscription, $pricing, $user_id, $fromsub_id = false) {
+		echo $this->single_button($pricing, $subscription, $user_id, $subscription->sub_id(), $fromsub_id);
+	}
+
+	function display_cancel_button($subscription, $pricing, $user_id) {
+		echo '<form class="unsubbutton" action="' . M_get_subscription_permalink() . '" method="post">';
+		wp_nonce_field('cancel-sub_' . $subscription->sub_id());
+		echo "<input type='hidden' name='action' value='unsubscribe' />";
+		echo "<input type='hidden' name='gateway' value='" . $this->gateway . "' />";
+		echo "<input type='hidden' name='subscription' value='" . $subscription->sub_id() . "' />";
+		echo "<input type='hidden' name='user' value='" . $user_id . "' />";
+		echo "<input type='submit' name='submit' value=' " . __('Unsubscribe', 'membership') . " ' class='button blue' />";
+		echo "</form>";
+	}
+
 	function update() {
 		update_option($this->gateway . '_api_key', $_POST[$this->gateway . '_api_key']);
 		update_option($this->gateway . '_button', $_POST[$this->gateway . '_button']);
@@ -329,8 +354,8 @@ class bitpay extends Membership_Gateway {
 		$html = '';
 		// TODO: We really should have an order ID...
 		$orderId = '';
-		$price = apply_filters('membership_amount_' . $M_options['paymentcurrency'], number_format($pricing[$sublevel - 1]['amount'], 2, '.' , ''));
-		$posData = $this->build_posData($user_id, $subscription->id, number_format($pricing[$sublevel - 1]['amount'], 2, '.' , ''), $sublevel, $fromsub);
+		$price = apply_filters('membership_amount_' . $M_options['paymentcurrency'], number_format($pricing[0]['amount'], 2, '.' , ''));
+		$posData = $this->build_posData($user_id, $subscription->id, number_format($pricing[0]['amount'], 2, '.' , ''), $sublevel, $fromsub);
 		$options = array('itemDesc' => $u->user_email . ': ' . $subscription->sub_name());
 		$resp = bpCreateInvoice($orderId, $price, $posData, $options);
 				
@@ -370,9 +395,73 @@ class bitpay extends Membership_Gateway {
 		return $html;
 	}
 
+	function single_free_button($pricing, $subscription, $user_id, $sublevel = 0) {
+		global $M_options;
+		if(empty($M_options['paymentcurrency'])) {
+			$M_options['paymentcurrency'] = 'USD';
+		}
+
+		$form = '';
+		$form .= '<form action="' . M_get_returnurl_permalink() . '" method="post">';
+		$form .= '<input type="hidden" name="custom" value="' . $this->build_custom($user_id, $subscription->id, '0', $sublevel) .'">';
+
+		if($sublevel == 1) {
+			$form .= '<input type="hidden" name="action" value="subscriptionsignup" />';
+			$form .=  wp_nonce_field('free-sub_' . $subscription->sub_id(), "_wpnonce", true, false);
+			$form .=  "<input type='hidden' name='gateway' value='" . $this->gateway . "' />";
+			$button = get_option( $this->gateway . "_payment_button", '' );
+			if( empty($button) ) {
+				$form .= '<input type="submit" class="button ' . apply_filters('membership_subscription_button_color', 'blue') . '" value="' . __('Sign Up','membership') . '" />';
+			} else {
+				$form .= '<input type="image" name="submit" border="0" src="' . $button . '" alt="Pay now with BitPay">';
+			}
+		} else {
+			$form .=  wp_nonce_field('renew-sub_' . $subscription->sub_id(), "_wpnonce", true, false);
+			$form .=  "<input type='hidden' name='action' value='subscriptionsignup' />";
+			$form .=  "<input type='hidden' name='gateway' value='" . $this->gateway . "' />";
+			$form .=  "<input type='hidden' name='subscription' value='" . $subscription->sub_id() . "' />";
+			$form .=  "<input type='hidden' name='user' value='" . $user_id . "' />";
+			$form .=  "<input type='hidden' name='level' value='" . $sublevel . "' />";
+			$button = get_option( $this->gateway . "_payment_button", '' );
+			if( empty($button) ) {
+				$form .= '<input type="submit" class="button ' . apply_filters('membership_subscription_button_color', 'blue') . '" value="' . __('Sign Up','membership') . '" />';
+			} else {
+				$form .= '<input type="image" name="submit" border="0" src="' . $button . '" alt="Pay now with BitPay">';
+			}
+		}
+		$form .= '</form>';
+		return $form;
+	}
+
 	function build_subscribe_button($subscription, $pricing, $user_id, $sublevel = 1, $fromsub = 0) {
-		if (!empty($pricing)) {
-			return $this->single_button($pricing, $subscription, $user_id, $sublevel, $fromsub);
+		//error_log("\nsubscription: " . safe_var_dump($subscription) . "\npricing: " . safe_var_dump($pricing) . "\nuser_id=$user_id sublevel=$sublevel fromsub_id=$fromsub", 3, '/tmp/phperrlog.txt');
+		if(!empty($pricing)) {
+			// check to make sure there is a price in the subscription
+			// we don't want to display free ones for a payment system
+			$free = true;
+			foreach($pricing as $key => $price) {
+				if(!empty($price['amount']) && $price['amount'] > 0 ) {
+					$free = false;
+				}
+			}
+			if(!$free) {
+				if(count($pricing) == 1) {
+					// A basic price or a single subscription
+					if(in_array($pricing[0]['type'], array('indefinite','finite'))) {
+						// one-off payment
+						return $this->single_button($pricing, $subscription, $user_id, false);
+					} else {
+						// simple subscription
+						return $this->single_button($pricing, $subscription, $user_id, true);
+					}
+				} else {
+					// something much more complex
+					return $this->single_button($pricing, $subscription, $user_id);
+
+				}
+			} else {
+				return $this->single_free_button($pricing, $subscription, $user_id);
+			}
 		}
 	}
 
