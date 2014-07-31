@@ -516,8 +516,8 @@ class bitpay extends Membership_Gateway {
 							$member->drop_subscription($fromsub);
 						}
 					}
+					membership_debug_log('BitPay invoice marked ' . $status . ':' . $id);
 				}
-				membership_debug_log('BitPay invoice marked ' . $status . ':' . $id);
 				break;
 			case 'expired':
 				// case: invoice expired without payment
