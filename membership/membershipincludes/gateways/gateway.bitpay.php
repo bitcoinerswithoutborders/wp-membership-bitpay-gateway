@@ -384,7 +384,7 @@ class bitpay extends Membership_Gateway {
 //... cut off last 3 digits from this time stamp, because we don't want milliseconds
 		$resp['invoiceTime'] = substr( $resp['invoiceTime'], 0, -3 );
 
-		$this->_record_transaction($user_id, $sublevel, $price, get_option($this->gateway . '_pricing_currency'), $resp['invoiceTime'], $resp['id'], 'created', __('Invoice created', 'membership'));
+		//$this->_record_transaction($user_id, $sublevel, $price, get_option($this->gateway . '_pricing_currency'), $resp['invoiceTime'], $resp['id'], 'created', __('Invoice created', 'membership'));
 		$html .= '<span class="btc-membership-price">';
 		$html .= 'BTC ' . $resp['btcPrice'];
 		$html .= '</span>';
@@ -484,9 +484,9 @@ class bitpay extends Membership_Gateway {
 			case 'new':
 				// case: invoice created and acknowledged by BitPay
 				$note = __('New invoice', 'membership');
-				$this->_record_transaction($user_id, $sub_id, $amount, $currency, $timestamp, $id, $status, $note);
+				//$this->_record_transaction($user_id, $sub_id, $amount, $currency, $timestamp, $id, $status, $note);
 				membership_debug_log('New BitPay invoice: ' . $id);
-				do_action('membership_payment_new', $user_id, $sub_id, $amount, $currency, $id);
+				//do_action('membership_payment_new', $user_id, $sub_id, $amount, $currency, $id);
 				break;
 			case 'paid':
 			case 'confirmed':
