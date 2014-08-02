@@ -545,14 +545,16 @@ class bitpay extends Membership_Gateway {
 				// case: successful payment
 				self::dprint(true, "keymatch(key, MEMBERSHIP$amount)");
 				if (!$this->keymatch($key, 'MEMBERSHIP' . $amount)) {
-					self::dprint(true, 'Received key does not match ' . 'MEMBERSHIP' . $amount);
+					self::dprint(true, 'Received key does not match ' . 'MEMBERSHIP' . $amount . ', relying on whitelist');
+/*
 					if ($member) {
 						if (defined('MEMBERSHIP_DEACTIVATE_USER_ON_CANCELATION') && MEMBERSHIP_DEACTIVATE_USER_ON_CANCELATION == true) {
 							self::dprint(true, 'Deactivating member ' . $user_id);
 							$member->deactivate();
 						}
 					}
-				} elseif (!$this->_check_duplicate_transaction($user_id, $sub_id, $timestamp, trim($id))) {
+				}
+				} else*/if (!$this->_check_duplicate_transaction($user_id, $sub_id, $timestamp, trim($id))) {
 					$this->_record_transaction($user_id, $sub_id, $amount, $currency, $timestamp, trim($id), $status, '');
 					if ($member) {
 						// This is the first level of a subscription so we need to create one if it doesn't already exist
