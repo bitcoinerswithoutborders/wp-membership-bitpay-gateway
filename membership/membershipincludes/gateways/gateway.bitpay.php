@@ -82,7 +82,7 @@ class bitpay extends Membership_Gateway {
                                 $msg .= self::safe_var_dump($arg);
 			$msg = trim($msg) . "\n";
 			$debugfile = get_option($this->gateway . '_debugfile', false);
-			if (!$ebugfile)
+			if (!$debugfile)
 				error_log($msg);
 			else
                         	error_log($msg, 3, $debugfile);
