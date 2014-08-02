@@ -544,6 +544,7 @@ class bitpay extends Membership_Gateway {
 			case 'complete':
 				// case: successful payment
 				self::dprint(true, "keymatch(key, MEMBERSHIP$amount)");
+				self::dprint(true, "other way: ", 'MEMBERSHIP' . apply_filters('membership_amount_' . $M_options['paymentcurrency'], $amount));
 				if (!$this->keymatch($key, 'MEMBERSHIP' . $amount)) {
 					self::dprint(true, 'Received key does not match ' . 'MEMBERSHIP' . $amount . ', relying on whitelist');
 /*
