@@ -553,8 +553,9 @@ class bitpay extends Membership_Gateway {
 							$member->deactivate();
 						}
 					}
+*/
 				}
-				} else*/if (!$this->_check_duplicate_transaction($user_id, $sub_id, $timestamp, trim($id))) {
+				/*} else*/if (!$this->_check_duplicate_transaction($user_id, $sub_id, $timestamp, trim($id))) {
 					$this->_record_transaction($user_id, $sub_id, $amount, $currency, $timestamp, trim($id), $status, '');
 					if ($member) {
 						// This is the first level of a subscription so we need to create one if it doesn't already exist
