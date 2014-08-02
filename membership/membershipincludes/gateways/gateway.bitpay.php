@@ -95,11 +95,11 @@ class bitpay extends Membership_Gateway {
 		if (!$wl || !isset($wl['expires']) || $wl['expires'] > $now) {
 			$r = wp_remote_get('https://bitpay.com/ipAddressList.txt');
 			if (is_wp_error($r)) {
-				self::dprint('Failed to fetch IP whitelist from BitPay. WP_Error: ' . self::safe_var_dump($r));
+				self::dprint(true, 'Failed to fetch IP whitelist from BitPay. WP_Error: ' . self::safe_var_dump($r));
 				return;
 			};
 			if ($r['response']['code'] != '200') {
-				self::dprint('Failed to fetch IP whitelist from BitPay. Response: ' . self::safe_var_dump($r));
+				self::dprint(true, 'Failed to fetch IP whitelist from BitPay. Response: ' . self::safe_var_dump($r));
 				return;
 			}
 			$ips = explode('|', trim($r['body']));
@@ -130,7 +130,6 @@ class bitpay extends Membership_Gateway {
 		$bpOptions['useLogging'] = true;
 		$bpOptions['fullNotifications'] = get_option($this->gateway . '_full_notifications', false);
 		$bpOptions['testnet'] = get_option($this->gateway . '_testnet', false);
-		$bpOptions['debugfile'] = get_option($this->gateway . '_debugfile', false);
 	}
 
 	function get_bitpay_currencies() {
@@ -353,7 +352,7 @@ class bitpay extends Membership_Gateway {
 	}
 
 	function explode_posData($data) {
-		self::dprint('explode_posData(' . $data . ')');
+		self::dprint(true, 'explode_posData(' . $data . ')');
 		///return explode(':', $data);	// le sigh...
 		$data = base64_decode($data);
 		$left = substr($data, 0, 16);
@@ -454,7 +453,7 @@ class bitpay extends Membership_Gateway {
 	function IPN_error_debug($code, $msg, $data = '', $email_admin = false) {
 		status_header($code);
 		echo $msg;
-		self::dprint("$code\n$msg\n" . self::safe_var_dump($data));
+		self::dprint(true, "$code\n$msg\n" . self::safe_var_dump($data));
 		if ($email_admin)
 			$this->email_plugin_or_site_admin('BitPay IPN error', "$code\n$msg\n" . self::safe_var_dump($data));
 		exit;
@@ -476,7 +475,7 @@ class bitpay extends Membership_Gateway {
 		if (!in_array($remote_ip, $wl['whitelist']))
 			IPN_error_debug('403 Forbidden', 'BitPay IPN request from unauthorized IP address: ' . $remote_ip, file_get_contents('php://input'), true);
 */
-		self::dprint('Received BitPay IPN from ' . $remote_ip);
+		self::dprint(true, 'Received BitPay IPN from ' . $remote_ip);
 
 		// Now make sure it's valid. bpVerifyNotification reads in form php://input and verifies the posData hash
 		//$invoice = bpVerifyNotification(true);
@@ -501,7 +500,7 @@ class bitpay extends Membership_Gateway {
 			$this->IPN_error_debug(200, '', "BitPay IPN with error code set\n$invoice", true);
 		}
 
-		self::dprint('New IPN: ' . self::safe_var_dump($invoice));
+		self::dprint(true, 'New IPN: ' . self::safe_var_dump($invoice));
 		$this->email_plugin_or_site_admin('New IPN', self::safe_var_dump($invoice) . "\n\n" . $post);
 
 		// process BitPay response
@@ -512,7 +511,7 @@ class bitpay extends Membership_Gateway {
 		list($timestamp, $user_id, $sub_id, $key, $sublevel, $fromsub) = $this->explode_posData($posData);
 		$factory = Membership_Plugin::factory();
 		$status = $invoice['status'];
-		self::dprint('Unpacked IPN data:'
+		self::dprint(true, 'Unpacked IPN data:'
 			. " \$id = $id"
 			. " \$amount = $amount"
 			. " \$currency = $currency"
@@ -530,7 +529,7 @@ class bitpay extends Membership_Gateway {
 				// case: invoice created and acknowledged by BitPay
 				$note = __('New invoice', 'membership');
 				//$this->_record_transaction($user_id, $sub_id, $amount, $currency, $timestamp, $id, $status, $note);
-				self::dprint('New BitPay invoice: ' . $id);
+				self::dprint(true, 'New BitPay invoice: ' . $id);
 				//do_action('membership_payment_new', $user_id, $sub_id, $amount, $currency, $id);
 				break;
 			case 'paid':
@@ -538,10 +537,10 @@ class bitpay extends Membership_Gateway {
 			case 'complete':
 				// case: successful payment
 				if (!$this->keymatch($key, 'MEMBERSHIP' . $amount)) {
-					self::dprint('Received key does not match ' . 'MEMBERSHIP' . $amount);
+					self::dprint(true, 'Received key does not match ' . 'MEMBERSHIP' . $amount);
 					if ($member) {
 						if (defined('MEMBERSHIP_DEACTIVATE_USER_ON_CANCELATION') && MEMBERSHIP_DEACTIVATE_USER_ON_CANCELATION == true) {
-							self::dprint('Deactivating member ' . $user_id);
+							self::dprint(true, 'Deactivating member ' . $user_id);
 							$member->deactivate();
 						}
 					}
@@ -549,7 +548,7 @@ class bitpay extends Membership_Gateway {
 					$this->_record_transaction($user_id, $sub_id, $amount, $currency, $timestamp, trim($id), $status, '');
 					if ($member) {
 						// This is the first level of a subscription so we need to create one if it doesn't already exist
-						self::dprint('Creating subscription for user ID ' . $user_id);
+						self::dprint(true, 'Creating subscription for user ID ' . $user_id);
 						$member->create_subscription($sub_id, $this->gateway);
 						do_action('membership_payment_subscr_signup', $user_id, $sub_id);
 						// remove any current subs for upgrades
@@ -557,25 +556,25 @@ class bitpay extends Membership_Gateway {
 						foreach ($sub_ids as $fromsub) {
 							if ($sub_id == $fromsub)
 								continue;
-							self::dprint('Dropping subscription ' . $fromsub . ' for user ID ' . $user_id);
+							self::dprint(true, 'Dropping subscription ' . $fromsub . ' for user ID ' . $user_id);
 							$member->drop_subscription($fromsub);
 						}
 					}
-					self::dprint('BitPay invoice marked ' . $status . ':' . $id);
+					self::dprint(true, 'BitPay invoice marked ' . $status . ':' . $id);
 				}
 				break;
 			case 'expired':
 				// case: invoice expired without payment
 				$note = __('Invoice expired without payment. No action required.', 'membership');
 				$this->_record_transaction($user_id, $sub_id, $amount, $currency, $timestamp, $id, $status, $note);
-				self::dprint('BitPay invoice expired: ' . $id);
+				self::dprint(true, 'BitPay invoice expired: ' . $id);
 				do_action('membership_payment_expired', $user_id, $sub_id, $amount, $currency, $id);
 				break;
 			case 'invalid':
 				// case: payment was not confirmed within 1 hour
 				$note = __('Invoice marked invalid (payment not confirmed within 1 hour).', 'membership');
 				$this->_record_transaction($user_id, $sub_id, $amount, $currency, $timestamp, $id, $status, $note);
-				self::dprint('BitPay invoice marked invalid: ' . $id . "\n" . self::safe_var_dump($invoice));
+				self::dprint(true, 'BitPay invoice marked invalid: ' . $id . "\n" . self::safe_var_dump($invoice));
 				// TODO: Email exception to admin
 				$msg = "BitPay has marked its invoice number $id (included below) as invalid, meaning that payment was not confirmed by the Bitcoin network within 1 hour of receipt.\n";
 				$msg .= "\n";
@@ -596,7 +595,7 @@ class bitpay extends Membership_Gateway {
 				break;
 			default:
 				// case: I don't think we're in Kansas any more...
-				self::dprint('BitPay IPN request with unknown status. Emailing admin. ');
+				self::dprint(true, 'BitPay IPN request with unknown status. Emailing admin. ');
 				$this->email_plugin_or_site_admin('BitPay IPN error: unknown status', self::safe_var_dump($invoice));
 		}
 		status_header(200);
