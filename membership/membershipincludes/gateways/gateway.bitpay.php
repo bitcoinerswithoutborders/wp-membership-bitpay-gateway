@@ -91,8 +91,10 @@ class bitpay extends Membership_Gateway {
 
 	function maybe_update_bitpay_ip_whitelist() {
 		$wl = get_option($this->gateway . '_ip_whitelist');
+		//self::dprint(true, "whitelist: ", $wl);
 		$now = time();
 		if (!$wl || !isset($wl['expires']) || $wl['expires'] > $now) {
+			self::dprint(true, 'Attempting to update BitPay whitelist');
 			$r = wp_remote_get('https://bitpay.com/ipAddressList.txt');
 			if (is_wp_error($r)) {
 				self::dprint(true, 'Failed to fetch IP whitelist from BitPay. WP_Error: ' . self::safe_var_dump($r));
@@ -450,13 +452,21 @@ class bitpay extends Membership_Gateway {
 		echo $this->build_subscribe_button($subscription, $pricing, $user_id, $sublevel);
 	}
 
-	function IPN_error_debug($code, $msg, $data = '', $email_admin = false) {
+	private function IPN_error_debug($code, $msg, $data = '', $email_admin = false) {
 		status_header($code);
 		echo $msg;
 		self::dprint(true, "$code\n$msg\n" . self::safe_var_dump($data));
 		if ($email_admin)
 			$this->email_plugin_or_site_admin('BitPay IPN error', "$code\n$msg\n" . self::safe_var_dump($data));
 		exit;
+	}
+
+	private function check_whitelist($ip, $wl) {
+		if (in_array($ip, $wl))
+			return true;
+		if (in_array(preg_replace('/::ffff:/', '', $ip), $wl)) // IPv6 representation of IPv4 address
+			return true;
+		return false;
 	}
 
 	// BitPay IPN handling code
@@ -466,15 +476,12 @@ class bitpay extends Membership_Gateway {
 		$this->set_bpOptions();
 		// First, try to make sure this is really coming from BitPay
 		$remote_ip = $this->_get_remote_ip();
-		// TODO: header('403 Forbidden - not on whitelist');
-/*
 		$this->maybe_update_bitpay_ip_whitelist();
 		$wl = get_option($this->gateway . '_ip_whitelist');
 		if (!$wl)
-			IPN_error_debug('403 Forbidden', 'BitPay IPN request with no whitelist in place!', '', true);
-		if (!in_array($remote_ip, $wl['whitelist']))
-			IPN_error_debug('403 Forbidden', 'BitPay IPN request from unauthorized IP address: ' . $remote_ip, file_get_contents('php://input'), true);
-*/
+			self::IPN_error_debug('403 Forbidden', 'BitPay IPN request with no whitelist in place!', '', true);
+		if (!self::check_whitelist($remote_ip, $wl['whitelist']))
+			self::IPN_error_debug('403 Forbidden', 'BitPay IPN request from unauthorized IP address: ' . $remote_ip, file_get_contents('php://input'), true);
 		self::dprint(true, 'Received BitPay IPN from ' . $remote_ip);
 
 		// Now make sure it's valid. bpVerifyNotification reads in form php://input and verifies the posData hash
@@ -482,22 +489,22 @@ class bitpay extends Membership_Gateway {
 
 		$post = file_get_contents("php://input");
 		if (!$post)
-			$this->IPN_error_debug(400, 'No post data', '', true);
+			self::IPN_error_debug(400, 'No post data', '', true);
 		$invoice = json_decode($post, true);
 		if (!is_array($invoice))
-			$this->IPN_error_debug(400, 'Malformed JSON', $post, true);
+			self::IPN_error_debug(400, 'Malformed JSON', $post, true);
 		if (!array_key_exists('posData', $invoice))
-			$this->IPN_error_debug(400, 'Missing posData', $invoice, true);
+			self::IPN_error_debug(400, 'Missing posData', $invoice, true);
 		$posData = $invoice['posData'];
 		$j = json_decode($posData, true);
 		if ($j != NULL) {
 			$posData = $j['posData'];
 			if ($bpOptions['verifyPos'] and $j['hash'] != bpHash(serialize($posData), $bpOptions['apiKey']))
-				$this->IPN_error_debug(403, 'Invalid posData hash', $invoice, true);
+				self::IPN_error_debug(403, 'Invalid posData hash', $invoice, true);
 		} elseif ($bpOptions['verifyPos'])
-			$this->IPN_error_debug(500, '', 'verifyPos is true but no has from BitPay', true);
+			self::IPN_error_debug(500, '', 'verifyPos is true but no has from BitPay', true);
 		if (isset($invoice['error'])) {
-			$this->IPN_error_debug(200, '', "BitPay IPN with error code set\n$invoice", true);
+			self::IPN_error_debug(200, '', "BitPay IPN with error code set\n$invoice", true);
 		}
 
 		self::dprint(true, 'New IPN: ' . self::safe_var_dump($invoice));
@@ -536,6 +543,7 @@ class bitpay extends Membership_Gateway {
 			case 'confirmed':
 			case 'complete':
 				// case: successful payment
+				self::dprint(true, "keymatch(key, MEMBERSHIP$amount)");
 				if (!$this->keymatch($key, 'MEMBERSHIP' . $amount)) {
 					self::dprint(true, 'Received key does not match ' . 'MEMBERSHIP' . $amount);
 					if ($member) {
