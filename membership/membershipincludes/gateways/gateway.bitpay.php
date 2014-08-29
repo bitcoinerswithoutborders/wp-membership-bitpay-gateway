@@ -10,6 +10,7 @@ if (!defined('ABSPATH')) exit; // Exit if accessed directly
 
 require_once 'php-client/bp_lib.php';
 
+
 class bitpay extends Membership_Gateway {
 
 	var $gateway = 'bitpay';
@@ -17,10 +18,21 @@ class bitpay extends Membership_Gateway {
 	var $issingle = true;
 	var $ip_whitelist_cache_expire_seconds;
 	var $bitpay_transaction_speeds;
+	private static $b91_dectab;
+	private static $b91_enctab = array(
+	        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+	        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+	        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+	        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '!', '#', '$',
+	        '%', '&', '(', ')', '*', '+', ',', '.', '-', ':', ';', '<', '=',
+	        '>', '?', '@', '[', ']', '^', '_', '`', '{', '|', '}', '~', ' '
+	);
 
 	public function __construct() {
 		parent::__construct();
 
+		self::$b91_dectab = array_flip(self::$b91_enctab);
 		$this->bitpay_transaction_speeds = array(
 			'high'		=>	__('High (immediate, no blockchain confirmations)', 'membership'),
 			'medium'	=>	__('Medium (1 blockchain confirmation, ~10 minutes)', 'membership'),
@@ -88,6 +100,67 @@ class bitpay extends Membership_Gateway {
                         	error_log($msg, 3, $debugfile);
                 }
         }
+
+	// ---
+	// Copyright (c) 2000-2006 Joachim Henke
+	// All rights reserved.
+	// http://base91.sourceforge.net/
+	// License: BSD (http://base91.sourceforge.net/license.txt)
+	//
+	// Modified to use '-' and ' ' instead of '/' and '"', which JSON escapes
+	
+	private static function base91_decode($d) {
+	        $l = strlen($d);
+	        $v = -1;
+	        for ($i = 0; $i < $l; ++$i) {
+	                $c = self::$b91_dectab[$d{$i}];
+	                if (!isset($c))
+	                        continue;
+	                if ($v < 0)
+	                        $v = $c;
+	                else {
+	                        $v += $c * 91;
+	                        $b |= $v << $n;
+	                        $n += ($v & 8191) > 88 ? 13 : 14;
+	                        do {
+	                                $o .= chr($b & 255);
+	                                $b >>= 8;
+	                                $n -= 8;
+	                        } while ($n > 7);
+	                        $v = -1;
+	                }
+	        }
+	        if ($v + 1)
+	                $o .= chr(($b | $v << $n) & 255);
+	        return $o;
+	}
+	
+	private static function base91_encode($d) {
+	        $l = strlen($d);
+	        for ($i = 0; $i < $l; ++$i) {
+	                $b |= ord($d{$i}) << $n;
+	                $n += 8;
+	                if ($n > 13) {
+	                        $v = $b & 8191;
+	                        if ($v > 88) {
+	                                $b >>= 13;
+	                                $n -= 13;
+	                        } else {
+	                                $v = $b & 16383;
+	                                $b >>= 14;
+	                                $n -= 14;
+	                        }
+	                        $o .= self::$b91_enctab[$v % 91] . self::$b91_enctab[$v / 91];
+	                }
+	        }
+	        if ($n) {
+	                $o .= self::$b91_enctab[$b % 91];
+	                if ($n > 7 || $b > 90)
+	                        $o .= self::$b91_enctab[$b / 91];
+	        }
+	        return $o;
+	}
+	// ---
 
 	function maybe_update_bitpay_ip_whitelist() {
 		$wl = get_option($this->gateway . '_ip_whitelist');
@@ -349,14 +422,13 @@ class bitpay extends Membership_Gateway {
 			$fromsub = filter_input(INPUT_GET, 'from_subscription', FILTER_VALIDATE_INT);
 		$fs = $fromsub & 0xffff;	// same
 		$posData = pack('NNNN', $t1, $t2, $uid, $sid) . $key . pack('nn', $sl, $fs);
-		$posData = base64_encode($posData);
+		$posData = @self::base91_encode($posData);
 		return $posData;
 	}
 
 	function explode_posData($data) {
-		self::dprint(true, 'explode_posData(' . $data . ')');
-		///return explode(':', $data);	// le sigh...
-		$data = base64_decode($data);
+		//self::dprint(true, 'explode_posData(' . $data . ')');
+		$data = @self::base91_decode($data);
 		$left = substr($data, 0, 16);
 		$key = substr($data, 16, 4);
 		$right = substr($data, 20);
